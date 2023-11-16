@@ -15,13 +15,14 @@ library(ggplot2)
 
 ### Problem 1
 
+Describe the raw data.
 ```{r load data}
 homicides = read.csv("homicide-data.csv")
 str(homicides)
 ```
+This dataset contains data on homicides in 50 large U.S. cities. It has `r ncol(homicides)` columns, and `r nrow(homicides)` observations. The columns are `r colnames(homicides)`. 
 
-#### Describe the raw data.
-
+Create a `city_state` variable (e.g. “Baltimore, MD”) and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).
 ```{r}
 homicides =  
   homicides |> 
@@ -34,8 +35,6 @@ homicides |>
   group_by(city) |> 
   summarize(count = n())
 ```
-
-Create a `city_state` variable (e.g. “Baltimore, MD”) and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).
 
 For the city of Baltimore, MD, use the prop.test function to estimate the proportion of homicides that are unsolved; save the output of prop.test as an R object, apply the broom::tidy to this object and pull the estimated proportion and confidence intervals from the resulting tidy dataframe.
 
@@ -73,7 +72,6 @@ print(paste("95% Confidence Interval: [", conf_low, ", ", conf_high, "]", sep = 
 ```
 
 
-
 Now run prop.test for each of the cities in your dataset, and extract both the proportion of unsolved homicides and the confidence interval for each. Do this within a “tidy” pipeline, making use of purrr::map, purrr::map2, list columns and unnest as necessary to create a tidy dataframe with estimated proportions and CIs for each city.
 
 ```{r}
@@ -103,23 +101,23 @@ ggplot(tidy_results, aes(x = reorder(city, estimate), y = estimate)) +
   theme_minimal()
 ```
 
-Problem 2
+### Problem 2
 
 This zip file contains data from a longitudinal study that included a control arm and an experimental arm. Data for each participant is included in a separate file, and file names include the subject ID and arm.
 
 Create a tidy dataframe containing data from all participants, including the subject ID, arm, and observations over time
-```{r}
+```{r include = FALSE}
 file_names = list.files("data", full.names = TRUE)
 data = map_df(file_names, read_csv, .id = "file_name")
 ```
 
 ```{r}
-tidy_data <- data %>%
+tidy_data = data |> 
   mutate(
     subject_id = str_extract(file_names, "\\d+"),
     arm = str_extract(file_names, "con|exp")
-  ) %>%
-  select(-file_name) %>%
+  ) |> 
+  select(-file_name) |> 
   pivot_longer(
     cols = -c(subject_id, arm),
     names_to = "time",
@@ -154,10 +152,14 @@ Set μ=0. Generate 5000 datasets from the model
 
 x∼Normal[μ,σ]
 
+For each dataset, save μ̂ and the p-value arising from a test of H:μ=0 using α=0.05. Hint: to obtain the estimate and p-value, use broom::tidy to clean the output of t.test.
+
+Repeat the above for μ={1,2,3,4,5,6}, and complete the following:
+
 ```{r}
 set.seed(123)  # For reproducibility
-n <- 30        # Sample size
-sigma <- 5     # Standard deviation
+n = 30        # Sample size
+sigma = 5     # Standard deviation
 mu_values = 0:6
 
 simulate_data <- function(mu, n, sigma) {
@@ -178,6 +180,9 @@ all_results <- all_results %>%
          rejected_null = p_value < 0.05)
 ```
 
+
+Make a plot showing the proportion of times the null was rejected (the power of the test) on the y axis and the true value of μ on the x axis. Describe the association between effect size and power.
+
 ```{r}
 all_results %>%
   group_by(mu) %>%
@@ -189,13 +194,8 @@ all_results %>%
        y = "Power") +
   theme_minimal()
 ```
+As the effect size increases, the power of the test also increases. A larger effect size means that the true mean is further away from the null hypothesis value. When the effect size is larger, it is easier for the test to detect that the sample mean is significantly different from the null hypothesis value, leading to a higher likelihood of correctly rejecting a false null hypothesis.
 
-
-For each dataset, save μ̂ and the p-value arising from a test of H:μ=0 using α=0.05. Hint: to obtain the estimate and p-value, use broom::tidy to clean the output of t.test.
-
-Repeat the above for μ={1,2,3,4,5,6}, and complete the following:
-
-Make a plot showing the proportion of times the null was rejected (the power of the test) on the y axis and the true value of μ on the x axis. Describe the association between effect size and power.
 Make a plot showing the average estimate of μ̂ on the y axis and the true value of μ on the x axis.
 
 ```{r}
@@ -224,6 +224,6 @@ all_results %>%
        y = "Average Estimate") +
   theme_minimal()
 ```
+Is the sample average of $\mu$ across tests for which the null is rejected approximately equal to the true value of $\mu$? Why or why not?
 
-
-Is the sample average of μ̂ across tests for which the null is rejected approximately equal to the true value of μ? Why or why not?
+No. The sample average of $\mu$ across tests for which the null is rejected approximately is not equal to the true value of $\mu$. This is because the sample average across tests whose null is r.ejected has many false negatives that contribute to an average estimated $\mu$ that differs form the true $\mu$
